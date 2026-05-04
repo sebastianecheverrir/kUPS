@@ -1,6 +1,6 @@
 inp_files:
   - host/Fe_bcc_vac_perturbed.cif
-model_path: ./mace-mpa-0-medium_32_cpu.zip
+model_path: hf://CuspAI/kUPS-mace-jax/mace-mpa-0-medium_32.zip
 relax:
   optimizer:
     - transform: scale_by_fire2
