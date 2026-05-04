@@ -16,7 +16,6 @@ cd examples
 kups_md_lj md_lj_argon_nvt.yaml
 kups_md_lj md_lj_argon_nve.yaml
 kups_md_mlff md_mace.yaml
-kups_md_mlff md_uma.yaml
 kups_md_mlff md_orb.yaml
 ```
 
@@ -75,22 +74,22 @@ Move probabilities and step sizes are configurable. The simulation supports mult
 
 # Machine-learning Force Fields
 
-CuspAI publishes JAX exports of MACE, UMA, and Orb on the Hugging Face Hub — one repository per model so each retains its upstream license:
+CuspAI publishes JAX exports of MACE and Orb on the Hugging Face Hub — one repository per model so each retains its upstream license:
 
 | Model | Hugging Face repository | License |
 |-------|-------------------------|---------|
 | [MACE](https://github.com/ACEsuit/mace-foundations) | [CuspAI/kUPS-mace-jax](https://huggingface.co/CuspAI/kUPS-mace-jax) | MIT |
-| [UMA](https://huggingface.co/facebook/UMA) | [CuspAI/kUPS-uma-jax](https://huggingface.co/CuspAI/kUPS-uma-jax) (gated) | FAIR Chemistry License v1 |
 | [Orb](https://github.com/orbital-materials/orb-models) | [CuspAI/kUPS-orb-jax](https://huggingface.co/CuspAI/kUPS-orb-jax) | Apache 2.0 |
 
-These are re-exports (via [Tojax](https://github.com/cusp-ai-oss/tojax)), not retrainings — weights and architectures are unchanged from upstream. UMA inherits Meta's gated distribution: request access on both the [upstream page](https://huggingface.co/facebook/UMA) and [CuspAI/kUPS-uma-jax](https://huggingface.co/CuspAI/kUPS-uma-jax), then `huggingface-cli login` before downloading.
+These are re-exports (via [Tojax](https://github.com/cusp-ai-oss/tojax)), not retrainings — weights and architectures are unchanged from upstream.
+
+> To use Meta's [UMA](https://huggingface.co/facebook/UMA) model with <em>k</em>UPS, you can download it directly from Hugging Face and then port it to JAX using [Tojax](https://github.com/cusp-ai-oss/tojax) following the instructions [here](notebooks/potentials.md#tojax-machine-learned-force-fields).
 
 Any `model_path:` field accepts either an `hf://<owner>/<repo>/<filename>` URI (fetched via `huggingface_hub.hf_hub_download` and cached on first use) or a local filesystem path to a Tojax-exported `.zip`:
 
 ```yaml
 # Remote (HF Hub, requires pip install kups[hf])
 model_path: hf://CuspAI/kUPS-mace-jax/mace-mpa-0-medium_32.zip
-model_path: hf://CuspAI/kUPS-uma-jax/uma-s-1p2_omat.zip        # heads: oc20, odac, omat, omc, omol
 model_path: hf://CuspAI/kUPS-orb-jax/orb_v3_conservative_inf_omat.zip
 
 # Local (anything readable by TojaxedMliap.from_zip_file)
