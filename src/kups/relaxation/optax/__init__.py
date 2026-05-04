@@ -3,7 +3,12 @@
 
 """Optax-based optimizers for structure relaxation."""
 
-from kups.relaxation.optax.fire import ScaleByFireState, scale_by_fire
+from kups.relaxation.optax.fire import (
+    ScaleByFire2State,
+    ScaleByFireState,
+    scale_by_fire,
+    scale_by_fire2,
+)
 from kups.relaxation.optax.lbfgs import scale_by_ase_lbfgs
 from kups.relaxation.optax.max_step_size import max_step_size
 from kups.relaxation.optax.optimizer import (
@@ -15,6 +20,7 @@ from kups.relaxation.optax.optimizer import (
 )
 
 __all__ = [
+    "ScaleByFire2State",
     "ScaleByFireState",
     "Transform",
     "TransformationConfig",
@@ -24,4 +30,5 @@ __all__ = [
     "max_step_size",
     "scale_by_ase_lbfgs",
     "scale_by_fire",
+    "scale_by_fire2",
 ]

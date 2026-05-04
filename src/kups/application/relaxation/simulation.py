@@ -152,8 +152,13 @@ def run_relax[State: IsRelaxState](
         max_force = jnp.max(jnp.linalg.norm(forces, axis=-1))
         return bool(max_force < config.force_tolerance)
 
+    def _postfix(s: State) -> dict[str, Any]:
+        e = jnp.asarray(s.systems.data.potential_energy).sum()
+        fmax = jnp.max(jnp.linalg.norm(s.particles.data.forces, axis=-1))
+        return {"E[eV]": f"{float(e): .6f}", "fmax[eV/Å]": f"{float(fmax): .4e}"}
+
     logger = CompositeLogger(
-        TqdmLogger(config.max_steps),
+        TqdmLogger(config.max_steps, postfix=_postfix),
         HDF5StorageWriter(config.out_file, RelaxLoggedData(), state, config.max_steps),
     )
     state = run_simulation_cycles(

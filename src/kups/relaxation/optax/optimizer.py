@@ -7,7 +7,7 @@ from typing import Any
 
 import optax
 
-from kups.relaxation.optax.fire import scale_by_fire
+from kups.relaxation.optax.fire import scale_by_fire, scale_by_fire2
 from kups.relaxation.optax.lbfgs import scale_by_ase_lbfgs
 from kups.relaxation.optax.max_step_size import max_step_size
 
@@ -19,6 +19,7 @@ TransformationConfig = list[Transform]
 
 _CUSTOM_TRANSFORMS: dict[str, Any] = {
     "scale_by_fire": scale_by_fire,
+    "scale_by_fire2": scale_by_fire2,
     "max_step_size": max_step_size,
     "scale_by_ase_lbfgs": scale_by_ase_lbfgs,
 }
