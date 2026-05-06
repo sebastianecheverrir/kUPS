@@ -72,6 +72,20 @@ def scale_by_fire(
     Composable Optax transform implementing the FIRE algorithm for
     structure relaxation. Can be chained with other transforms.
 
+    .. note::
+
+        This is the original FIRE 1.0 (Bitzek 2006). For most
+        production relaxations prefer :func:`scale_by_fire2`, which
+        Guénolé et al. 2020 (Fig. 4–6) report converges in ~1.5–3×
+        fewer force calls on Lennard-Jones, EAM and Tersoff
+        benchmarks. ABC-FIRE (``use_abc=True``, Echeverri Restrepo &
+        Andric 2023, Fig. 2–3) is typically a further ~10–40%
+        faster, but takes more aggressive steps and is correspondingly
+        more prone to diverging on poorly conditioned or noisy
+        landscapes — enable it only after a plain FIRE 2.0 run is
+        known to be stable. FIRE 1.0 remains useful as a well-tested
+        baseline and for comparison with legacy results.
+
     Args:
         dt_start: Initial timestep.
         dt_max: Maximum timestep. Defaults to 10 * dt_start.
@@ -197,6 +211,26 @@ def scale_by_fire2(
     Optax transform only sees the incoming gradient once per step, so
     the recovery kick reuses that gradient.
 
+    .. note::
+
+        **When to pick which.** Guénolé et al. 2020 (Fig. 4–6) show
+        FIRE 2.0 reaching the same convergence threshold in roughly
+        1.5–3× fewer force evaluations than FIRE 1.0 across a wide
+        range of EAM, LJ and Tersoff benchmarks. ABC-FIRE
+        (``use_abc=True``, Echeverri Restrepo & Andric 2023, Fig. 2–3)
+        is typically a further ~10–40% faster on dislocation and
+        grain-boundary relaxations, with the largest gains in the
+        first ~``n_min`` iterations after each ``P ≤ 0`` event.
+        However, the bias-corrected mixing makes the early-step
+        velocity update much larger than plain FIRE 2.0, so ABC-FIRE
+        is more prone to overshoot and divergence on noisy or
+        poorly conditioned potentials. **Recommended workflow:**
+        always start with the more conservative FIRE 2.0
+        (``use_abc=False``); only switch to ABC once that run is
+        known to converge cleanly and you can tolerate the extra
+        risk in exchange for the speed-up. Keep :func:`scale_by_fire`
+        for cross-checking against legacy results.
+
     Key algorithmic steps per iteration (matching LAMMPS):
 
     1. Compute power ``P = F · v_old``.
@@ -225,6 +259,28 @@ def scale_by_fire2(
     where ``N`` is the current positive-step count since the last
     non-positive power event, i.e. ``ntimestep - last_negative`` in
     LAMMPS and ``new_n_pos`` in this implementation.
+
+    .. note::
+
+        ``max_step`` semantics differ from :func:`scale_by_fire`. They
+        are **not** drop-in equivalent — a YAML swap between the two
+        will silently change the bound applied to position updates:
+
+        * :func:`scale_by_fire` (original): clips the position update
+          by **global L2 norm**, ``‖Δx‖₂ ≤ max_step``, applied as a
+          single rescale of the full update vector. Default ``0.2`` Å.
+        * :func:`scale_by_fire2`, ``use_abc=False``: LAMMPS-style
+          ``dmax`` — one-shot timestep rescale based on the
+          **∞-norm** of velocity (``max_i |v_i|``), so
+          ``max_i |Δx_i| ≤ max_step`` per step. Default ``0.1`` Å.
+        * :func:`scale_by_fire2`, ``use_abc=True``: per-component
+          **velocity clip** ``|v_i| ≤ max_step / dtv`` that persists
+          into the next step. Default ``0.1`` Å.
+
+        Because the ∞-norm bound is per-component while the L2 bound is
+        global, an identical ``max_step`` value is *more* restrictive
+        under ``scale_by_fire2`` for high-dimensional systems. Tune
+        ``max_step`` after switching algorithms.
 
     Args:
         dt_start: Initial timestep.
@@ -359,7 +415,7 @@ def scale_by_fire2(
             scale1 = jnp.where(positive_power, (1.0 - alpha_for_mixing) / safe_abc, 1.0)
             # LAMMPS: if (fdotfall <= 1e-20) scale2 = 0.0
             scale2_raw = jnp.where(
-                f_sq <= 1e-20,
+                f_sq <= 1e-20,  # type: ignore[operator]
                 0.0,
                 (
                     alpha_for_mixing
@@ -373,7 +429,7 @@ def scale_by_fire2(
             scale1 = 1.0 - state.alpha
             # LAMMPS: if (fdotfall <= 1e-20) scale2 = 0.0
             scale2 = jnp.where(
-                f_sq <= 1e-20,
+                f_sq <= 1e-20,  # type: ignore[operator]
                 0.0,
                 state.alpha * jnp.sqrt(v_old_sq / jnp.maximum(f_sq, 1e-20)),
             )
