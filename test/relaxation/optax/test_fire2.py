@@ -50,9 +50,7 @@ class TestScaleByFire2:
     def test_positive_power_increases_n_pos(self):
         """Consecutive P>0 steps should accumulate n_pos."""
         # Disable delaystep_start so we leave the startup mask quickly.
-        optimizer = scale_by_fire2(
-            dt_start=0.1, n_min=2, delaystep_start=False
-        )
+        optimizer = scale_by_fire2(dt_start=0.1, n_min=2, delaystep_start=False)
         params = jnp.array([1.0])
         state = optimizer.init(params)
         gradient = jnp.array([-1.0])
@@ -85,9 +83,7 @@ class TestScaleByFire2:
         """In P<=0 branch, dt shrinks by f_dec (after startup mask)."""
         # Manually craft a state past startup with non-zero velocity
         # opposing the force, so power < 0.
-        optimizer = scale_by_fire2(
-            dt_start=0.1, dt_min=1e-6, f_dec=0.5, n_min=2
-        )
+        optimizer = scale_by_fire2(dt_start=0.1, dt_min=1e-6, f_dec=0.5, n_min=2)
         params = jnp.array([1.0])
         state = ScaleByFire2State(
             velocity=jnp.array([1.0]),
@@ -104,9 +100,7 @@ class TestScaleByFire2:
 
     def test_dt_bounded_by_dt_min(self):
         """dt should never drop below dt_min (LAMMPS behaviour)."""
-        optimizer = scale_by_fire2(
-            dt_start=0.02, dt_min=0.01, f_dec=0.5, n_min=1
-        )
+        optimizer = scale_by_fire2(dt_start=0.02, dt_min=0.01, f_dec=0.5, n_min=1)
         params = jnp.array([1.0])
         # Repeatedly force the negative branch.
         state = ScaleByFire2State(
@@ -329,10 +323,7 @@ class TestScaleByFire2:
         _, new_state = optimizer.update(gradient, state, params)
         assert isinstance(new_state, ScaleByFire2State)
         limit = max_step / float(new_state.dt)
-        assert (
-            float(jnp.max(jnp.abs(jnp.asarray(new_state.velocity))))
-            <= limit + 1e-6
-        )
+        assert float(jnp.max(jnp.abs(jnp.asarray(new_state.velocity)))) <= limit + 1e-6
 
     def test_max_step_none_disables_clipping(self):
         """max_step=None should let updates exceed any fixed bound."""
@@ -379,9 +370,7 @@ class TestScaleByFire2:
 
     def test_convergence_on_quadratic(self):
         """FIRE 2.0 should converge on a simple quadratic potential."""
-        optimizer = scale_by_fire2(
-            dt_start=0.05, dt_max=0.5, max_step=0.5
-        )
+        optimizer = scale_by_fire2(dt_start=0.05, dt_max=0.5, max_step=0.5)
         x = jnp.array([5.0])
         state = optimizer.init(x)
         for _ in range(200):

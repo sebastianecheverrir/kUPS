@@ -417,10 +417,7 @@ def scale_by_fire2(
             scale2_raw = jnp.where(
                 f_sq <= 1e-20,  # type: ignore[operator]
                 0.0,
-                (
-                    alpha_for_mixing
-                    * jnp.sqrt(v_old_sq / jnp.maximum(f_sq, 1e-20))
-                )
+                (alpha_for_mixing * jnp.sqrt(v_old_sq / jnp.maximum(f_sq, 1e-20)))
                 / safe_abc,
             )
             scale2 = jnp.where(positive_power, scale2_raw, 0.0)
@@ -440,12 +437,8 @@ def scale_by_fire2(
         # LAMMPS checks: for P>0 uses v_old (from previous step);
         # for P<=0 estimates v = dt*F (flagv0 mechanism).
         if max_step is not None and not use_abc:
-            vmax_pos = optax.tree_utils.tree_max(
-                jax.tree.map(jnp.abs, state.velocity)
-            )
-            vmax_neg = new_dt * optax.tree_utils.tree_max(
-                jax.tree.map(jnp.abs, forces)
-            )
+            vmax_pos = optax.tree_utils.tree_max(jax.tree.map(jnp.abs, state.velocity))
+            vmax_neg = new_dt * optax.tree_utils.tree_max(jax.tree.map(jnp.abs, forces))
             vmax = jnp.where(positive_power, vmax_pos, vmax_neg)
             dtv = jnp.where(
                 new_dt * vmax > max_step,
@@ -474,9 +467,7 @@ def scale_by_fire2(
         v_int = jax.tree.map(lambda v, f: v + dtv * f, v_pre, forces)
 
         # ----- Mixing (applied only when P > 0, LAMMPS: if vdotfall>0) ---
-        v_mixed = jax.tree.map(
-            lambda v, f: scale1 * v + scale2 * f, v_int, forces
-        )
+        v_mixed = jax.tree.map(lambda v, f: scale1 * v + scale2 * f, v_int, forces)
         new_velocity = jax.tree.map(
             lambda mix, integ: jnp.where(positive_power, mix, integ),
             v_mixed,
@@ -487,9 +478,7 @@ def scale_by_fire2(
         # LAMMPS: if (fabs(v[i]*dtv) > dmax) v[i] = dmax/dtv * sign(v[i])
         if max_step is not None and use_abc:
             limit = max_step / jnp.maximum(dtv, 1e-30)
-            v_clipped = jax.tree.map(
-                lambda v: jnp.clip(v, -limit, limit), new_velocity
-            )
+            v_clipped = jax.tree.map(lambda v: jnp.clip(v, -limit, limit), new_velocity)
             # Clip only on positive-power steps (LAMMPS gates on vdotfall>0)
             new_velocity = jax.tree.map(
                 lambda cl, uncl: jnp.where(positive_power, cl, uncl),
@@ -499,8 +488,8 @@ def scale_by_fire2(
 
         # ----- Position update: x += dtv * v (+ backtrack on P <= 0) -----
         position_updates = jax.tree.map(
-            lambda v, back: dtv * v + jnp.where(
-                positive_power, jnp.zeros_like(back), back
+            lambda v, back: (
+                dtv * v + jnp.where(positive_power, jnp.zeros_like(back), back)
             ),
             new_velocity,
             backtrack,
